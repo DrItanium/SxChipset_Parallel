@@ -258,7 +258,7 @@ public:
             // do nothing
         }
     }
-    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>(PIND & 0b0110'0000); }
+    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>(static_cast<byte>(~PIND) & 0b0110'0000); }
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
@@ -510,7 +510,7 @@ public:
         full32BitUpdate<offsetMask>();
         updateTargetFunctions<inDebugMode>();
         setMuxToChannelA();
-        isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isAsserted();
+        isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isDeasserted();
         setMuxToChannelB();
         if constexpr (inDebugMode) {
             lastDebug_();
