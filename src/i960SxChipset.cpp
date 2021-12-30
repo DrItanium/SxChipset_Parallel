@@ -58,8 +58,8 @@ constexpr auto Serial0BaseAddress = 0xFB00'0000;
 constexpr auto DisplayBaseAddress = 0xFC00'0000;
 constexpr auto SDBaseAddress = 0xFD00'0000;
 constexpr auto MaximumNumberOfOpenFiles = 16;
-constexpr auto CompileInAddressDebuggingSupport = true;
-constexpr auto AddressDebuggingEnabledOnStartup = true;
+constexpr auto CompileInAddressDebuggingSupport = false;
+constexpr auto AddressDebuggingEnabledOnStartup = false;
 constexpr auto ValidateTransferDuringInstall = false;
 /**
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
@@ -175,9 +175,9 @@ template<bool inDebugMode>
 inline void handleMemoryInterface() noexcept {
     static constexpr auto DisplayAddressDebug = inDebugMode;
     static constexpr auto DisplayOffsetData = inDebugMode;
-    static constexpr auto DisplayCycleUnlockData = inDebugMode && false;
-    static constexpr auto DisplayInformCPUDebug = inDebugMode && false;
-    static constexpr auto DisplaySetDataBitsDebug = inDebugMode && false;
+    static constexpr auto DisplayCycleUnlockData = inDebugMode;
+    static constexpr auto DisplayInformCPUDebug = inDebugMode;
+    static constexpr auto DisplaySetDataBitsDebug = inDebugMode;
     if constexpr (DisplayAddressDebug) {
         displayRequestedAddress();
     }
@@ -253,8 +253,8 @@ inline void handleExternalDeviceRequest() noexcept {
                 Serial.print(F("\tRead Value: 0x"));
                 Serial.println(result, HEX);
             }
-            ProcessorInterface::setDataBits<false && inDebugMode>(result);
-            if (informCPU<false && inDebugMode>()) {
+            ProcessorInterface::setDataBits<inDebugMode>(result);
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -276,7 +276,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getPageOffset(),
                      ProcessorInterface::getStyle(),
                      dataBits);
-            if (informCPU<false && inDebugMode>()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
