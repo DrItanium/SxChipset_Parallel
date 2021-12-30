@@ -87,6 +87,7 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
+        setDemuxAsGPIOSelect();
         SplitWord16 output(0);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = generateReadOpcode(addr);
@@ -125,6 +126,7 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = generateReadOpcode(addr);
         /*
@@ -154,6 +156,7 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = generateWriteOpcode(addr);
         /*
@@ -183,6 +186,7 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = generateWriteOpcode(addr);
         /*
@@ -228,15 +232,18 @@ public:
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
             return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
         } else {
+            SplitWord16 ret;
+            ret.bytes[0] = PORTC;
+            ret.bytes[1] = PORTA;
             // stub out
             return SplitWord16(0);
         }
     }
     static void setDataBits(uint16_t value) noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
             // the latch is preserved in between data line changes
             // okay we are still pointing as output values
             // check the latch and see if the output value is the same as what is latched
@@ -245,6 +252,9 @@ public:
                 writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
             }
         } else {
+            SplitWord16 split(value) ;
+            PORTA = split.bytes[1];
+            PORTC = split.bytes[0];
             // do nothing
         }
     }
@@ -252,23 +262,27 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
             if (!dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
             }
         } else {
+            portMode(PORTA, INPUT);
+            portMode(PORTC, INPUT);
             // do nothing
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
             if (dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
             }
         } else {
             // do nothing
+            portMode(PORTA, OUTPUT);
+            portMode(PORTC, OUTPUT);
         }
     }
 private:

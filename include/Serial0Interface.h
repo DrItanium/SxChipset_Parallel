@@ -97,6 +97,7 @@ private:
     static inline void handleFirstPageRegisterWrites(uint8_t offset, LoadStoreStyle, SplitWord16 value) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::TriggerInterrupt:
+                // do nothing
                 break;
             case Registers::ConsoleFlush:
                 Serial.flush();

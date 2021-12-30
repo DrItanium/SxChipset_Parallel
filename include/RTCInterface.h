@@ -96,74 +96,86 @@ public:
 public:
     RTCInterface() = delete;
     ~RTCInterface() = delete;
-    static constexpr bool respondsTo(byte targetPage) noexcept {
-        return targetPage >= StartPage && targetPage < EndPage;
-    }
     static void begin() noexcept {
-        rtcUp_ = rtc_.begin();
-        if (!rtcUp_) {
-            Serial.println(F("NO RTC FOUND...DISABLING"));
-        } else {
-            Serial.println(F("RTC FOUND... CHECKING"));
-            if (!rtc_.initialized() || rtc_.lostPower()) {
-                Serial.println(F("RTC is NOT initialized, setting time from sketch compile"));
-                // not the most accurate but good enough
-                rtc_.adjust(DateTime(F(__DATE__), F(__TIME__)));
-            }
-            // make sure that all timers are shutoff on startup
-            rtc_.deconfigureAllTimers();
-            DateTime now = rtc_.now();
-            Serial.print(now.year(), DEC);
-            Serial.print(F("/"));
-            Serial.print(now.month(), DEC);
-            Serial.print(F("/"));
-            Serial.print(now.day(), DEC);
-            Serial.print(F(" "));
-            Serial.print(now.hour(), DEC);
-            Serial.print(F(":"));
-            Serial.print(now.minute(), DEC);
-            Serial.print(F(":"));
-            Serial.print(now.second(), DEC);
-            Serial.println();
+        if constexpr (!TargetBoard::onAtmega1284p_Type2()) {
+            rtcUp_ = rtc_.begin();
+            if (!rtcUp_) {
+                Serial.println(F("NO RTC FOUND...DISABLING"));
+            } else {
+                Serial.println(F("RTC FOUND... CHECKING"));
+                if (!rtc_.initialized() || rtc_.lostPower()) {
+                    Serial.println(F("RTC is NOT initialized, setting time from sketch compile"));
+                    // not the most accurate but good enough
+                    rtc_.adjust(DateTime(F(__DATE__), F(__TIME__)));
+                }
+                // make sure that all timers are shutoff on startup
+                rtc_.deconfigureAllTimers();
+                DateTime now = rtc_.now();
+                Serial.print(now.year(), DEC);
+                Serial.print(F("/"));
+                Serial.print(now.month(), DEC);
+                Serial.print(F("/"));
+                Serial.print(now.day(), DEC);
+                Serial.print(F(" "));
+                Serial.print(now.hour(), DEC);
+                Serial.print(F(":"));
+                Serial.print(now.minute(), DEC);
+                Serial.print(F(":"));
+                Serial.print(now.second(), DEC);
+                Serial.println();
 
-            rtc_.start();
+                rtc_.start();
+            }
         }
     }
     static uint16_t read(uint8_t, uint8_t offset, LoadStoreStyle) noexcept {
-        switch (static_cast<Registers>(offset)) {
-            case Registers::Seconds: return static_cast<uint16_t>(now_.second());
-            case Registers::Hours: return static_cast<uint16_t>(now_.hour());
-            case Registers::Minutes: return static_cast<uint16_t>(now_.minute());
-            case Registers::Day: return static_cast<uint16_t>(now_.day());
-            case Registers::Month: return static_cast<uint16_t>(now_.month());
-            case Registers::Year: return static_cast<uint16_t>(now_.year());
-            case Registers::DayOfTheWeek: return static_cast<uint16_t>(now_.dayOfTheWeek());
-            case Registers::Available:
-                return rtcUp_ ? 0xFFFF : 0;
-            case Registers::UnixtimeLower:
-                return static_cast<uint16_t>(unixtime_);
-            case Registers::UnixtimeUpper:
-                return static_cast<uint16_t>(unixtime_ >> 16);
-            case Registers::SecondstimeLower:
-                return static_cast<uint16_t>(secondstime_);
-            case Registers::SecondstimeUpper:
-                return static_cast<uint16_t>(secondstime_ >> 16);
-            default:
-                return 0;
+        if constexpr (!TargetBoard::onAtmega1284p_Type2()) {
+            switch (static_cast<Registers>(offset)) {
+                case Registers::Seconds:
+                    return static_cast<uint16_t>(now_.second());
+                case Registers::Hours:
+                    return static_cast<uint16_t>(now_.hour());
+                case Registers::Minutes:
+                    return static_cast<uint16_t>(now_.minute());
+                case Registers::Day:
+                    return static_cast<uint16_t>(now_.day());
+                case Registers::Month:
+                    return static_cast<uint16_t>(now_.month());
+                case Registers::Year:
+                    return static_cast<uint16_t>(now_.year());
+                case Registers::DayOfTheWeek:
+                    return static_cast<uint16_t>(now_.dayOfTheWeek());
+                case Registers::Available:
+                    return rtcUp_ ? 0xFFFF : 0;
+                case Registers::UnixtimeLower:
+                    return static_cast<uint16_t>(unixtime_);
+                case Registers::UnixtimeUpper:
+                    return static_cast<uint16_t>(unixtime_ >> 16);
+                case Registers::SecondstimeLower:
+                    return static_cast<uint16_t>(secondstime_);
+                case Registers::SecondstimeUpper:
+                    return static_cast<uint16_t>(secondstime_ >> 16);
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
         }
     }
     static void write(uint8_t, uint8_t offset, LoadStoreStyle, SplitWord16) noexcept {
-        switch (static_cast<Registers>(offset)) {
-            case Registers::NowRequest: {
-                if (rtcUp_) {
-                    now_ = rtc_.now();
-                    unixtime_ = now_.unixtime();
-                    secondstime_ = now_.secondstime();
+        if constexpr (!TargetBoard::onAtmega1284p_Type2()) {
+            switch (static_cast<Registers>(offset)) {
+                case Registers::NowRequest: {
+                    if (rtcUp_) {
+                        now_ = rtc_.now();
+                        unixtime_ = now_.unixtime();
+                        secondstime_ = now_.secondstime();
+                    }
+                    break;
                 }
-                break;
+                default:
+                    break;
             }
-            default:
-                break;
         }
     }
     static constexpr auto available() noexcept { return rtcUp_; }

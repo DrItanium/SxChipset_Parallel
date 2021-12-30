@@ -357,6 +357,19 @@ DefInputPin(i960Pinout::MUX_CHAN1, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::DATA0, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::DATA1, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::DATA2, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA3, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA4, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA5, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA6, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA7, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA8, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA9, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA10, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA11, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA12, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA13, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA14, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA15, LOW, HIGH);
 
 #undef DefBidirectionalPin
 #undef DefSPICSPin
