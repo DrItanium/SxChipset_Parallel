@@ -172,7 +172,12 @@ inline void fallbackBody() noexcept {
 
 template<bool inDebugMode>
 inline void handleMemoryInterface() noexcept {
-    if constexpr (inDebugMode) {
+    static constexpr auto DisplayAddressDebug = inDebugMode;
+    static constexpr auto DisplayOffsetData = inDebugMode && false;
+    static constexpr auto DisplayCycleUnlockData = inDebugMode && false;
+    static constexpr auto DisplayInformCPUDebug = inDebugMode && false;
+    static constexpr auto DisplaySetDataBitsDebug = inDebugMode && false;
+    if constexpr (DisplayAddressDebug) {
         displayRequestedAddress();
     }
     // okay we are dealing with the psram chips
@@ -182,17 +187,17 @@ inline void handleMemoryInterface() noexcept {
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock<inDebugMode>();
+            waitForCycleUnlock<DisplayCycleUnlockData>();
             auto outcome = theEntry.get(i);
-            if constexpr (inDebugMode) {
+            if constexpr (DisplayOffsetData) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.println(i, HEX);
                 Serial.print(F("\tRead the value: 0x"));
                 Serial.println(outcome, HEX);
             }
             // Only pay for what we need even if it is slower
-            ProcessorInterface::setDataBits<false && inDebugMode>(outcome);
-            if (informCPU<false && inDebugMode>()) {
+            ProcessorInterface::setDataBits<DisplaySetDataBitsDebug>(outcome);
+            if (informCPU<DisplayInformCPUDebug>()) {
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -205,16 +210,16 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock<inDebugMode>();
+            waitForCycleUnlock<DisplayCycleUnlockData>();
             auto bits = ProcessorInterface::getDataBits();
-            if constexpr (inDebugMode) {
+            if constexpr (DisplayOffsetData) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.println(i, HEX);
                 Serial.print(F("\tWriting the value: 0x"));
                 Serial.println(bits.getWholeValue(), HEX);
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
-            if (informCPU<false && inDebugMode>()) {
+            if (informCPU<DisplayInformCPUDebug>()) {
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
