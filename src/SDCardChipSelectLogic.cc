@@ -43,6 +43,7 @@ void sdCsInit(SdCsPin_t pin) {
 }
 
 void sdCsWrite(SdCsPin_t, bool level) {
+    setDemuxAsSDEN();
     // if we got here then assume SD_EN
     digitalWrite<i960Pinout::SD_EN>(level);
 }
