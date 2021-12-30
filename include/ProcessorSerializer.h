@@ -253,8 +253,17 @@ public:
             }
         } else {
             SplitWord16 split(value) ;
+            Serial.print(F("\tSPLIT: 0x"));
+            Serial.println(split.getWholeValue(), HEX);
+
             PORTA = split.bytes[1];
             PORTC = split.bytes[0];
+            Serial.print(F("\tPORTA: 0x"));
+            Serial.println(PORTA, HEX);
+            Serial.print(F("\tPORTC: 0x"));
+            Serial.println(PORTC, HEX);
+            Serial.print(F("\tSERIAL READ: 0x"));
+            Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), HEX);
             // do nothing
         }
     }
