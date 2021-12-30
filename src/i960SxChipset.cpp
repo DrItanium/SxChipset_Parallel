@@ -114,13 +114,6 @@ template<bool inDebugMode>
     }
     while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isAsserted() && DigitalPin<i960Pinout::BURST_NEXT_>::isDeasserted());
     bool outcome = DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted();
-    if constexpr (inDebugMode) {
-        if (outcome) {
-            Serial.println(F("\t\tTRANSACTION COMPLETE"));
-        } else {
-            Serial.println(F("\t\tBURST NEXT"));
-        }
-    }
     DigitalPin<i960Pinout::Ready_>::deassertPin();
     return outcome;
 }
@@ -133,9 +126,6 @@ inline void waitForCycleUnlock() noexcept {
         if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
             signalHaltState(F("CHECKSUM FAILURE!"));
         }
-    }
-    if constexpr (inDebugMode) {
-        Serial.println(F("\tCYCLE UNLOCK COMPLETE!"));
     }
 }
 constexpr auto IncrementAddress = true;
@@ -159,7 +149,7 @@ inline void fallbackBody() noexcept {
         for (;;) {
             waitForCycleUnlock<inDebugMode>();
             // need to introduce some delay
-            ProcessorInterface::setDataBits<inDebugMode>(0);
+            ProcessorInterface::setDataBits<false && inDebugMode>(0);
             if (informCPU<inDebugMode>()) {
                 break;
             }
@@ -201,7 +191,7 @@ inline void handleMemoryInterface() noexcept {
                 Serial.println(outcome, HEX);
             }
             // Only pay for what we need even if it is slower
-            ProcessorInterface::setDataBits<inDebugMode>(outcome);
+            ProcessorInterface::setDataBits<false && inDebugMode>(outcome);
             if (informCPU<inDebugMode>()) {
                 break;
             }
@@ -257,7 +247,7 @@ inline void handleExternalDeviceRequest() noexcept {
                 Serial.print(F("\tRead Value: 0x"));
                 Serial.println(result, HEX);
             }
-            ProcessorInterface::setDataBits<inDebugMode>(result);
+            ProcessorInterface::setDataBits<false && inDebugMode>(result);
             if (informCPU<inDebugMode>()) {
                 break;
             }
