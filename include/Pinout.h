@@ -28,23 +28,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Arduino.h>
 #include "MCUPlatform.h"
 using Address = uint32_t;
-/**
- * @brief Sx Load/Store styles that the processor will request
- */
 enum class LoadStoreStyle : uint8_t {
-    // based off of BE0,BE1 pins
-#ifdef CHIPSET_TYPE1
-// no need to shift
     Full16 = 0b0000'0000,
-    Upper8 = 0b0001'0000,
-    Lower8 = 0b0010'0000,
-    None = 0b0011'0000,
-#else
-    Full16 = 0b00,
-    Upper8 = 0b01,
-    Lower8 = 0b10,
-    None = 0b11,
-#endif
+    Upper8 = 0b0010'0000,
+    Lower8 = 0b0100'0000,
+    None = 0b0110'0000,
 };
 /// @todo fix this pinout for different targets
 enum class i960Pinout : int {

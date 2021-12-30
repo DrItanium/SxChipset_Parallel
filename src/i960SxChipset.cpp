@@ -330,6 +330,7 @@ void installBootImage() noexcept {
                 Serial.print(F("."));
             }
         } else {
+            setDemuxAsSDEN();
             // use the cache as a buffer since it won't be in use at this point in time
             for (Address addr = 0; addr < size; addr += CacheSize) {
                 // do a linear read from the start to the end of storage

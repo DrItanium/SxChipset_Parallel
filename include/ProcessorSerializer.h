@@ -236,8 +236,8 @@ public:
             return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
         } else {
             SplitWord16 ret;
-            ret.bytes[0] = PORTC;
-            ret.bytes[1] = PORTA;
+            ret.bytes[0] = PINC;
+            ret.bytes[1] = PINA;
             // stub out
             return SplitWord16(0);
         }
@@ -258,8 +258,8 @@ public:
             // do nothing
         }
     }
-    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>((PINA & 0b11'0000)); }
-    [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
+    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>(PIND & 0b0110'0000); }
+    [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
         if constexpr (TargetBoard::onAtmega1284p_Type1()) {
@@ -315,6 +315,7 @@ private:
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         /*
@@ -374,6 +375,7 @@ private:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -402,6 +404,7 @@ private:
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         // only read the upper 16-bits
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -427,6 +430,7 @@ private:
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
         // only read the upper 8 bits
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -445,6 +449,7 @@ private:
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
         // only read the upper 8 bits
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -466,6 +471,7 @@ private:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -489,6 +495,7 @@ private:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+        setDemuxAsGPIOSelect();
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -579,6 +586,9 @@ public:
                 updateTargetFunctions<inDebugMode>();
                 break;
         }
+        setMuxToChannelA();
+        isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isAsserted();
+        setMuxToChannelB();
         if constexpr (inDebugMode) {
             lastDebug_();
         } else {
@@ -608,6 +618,7 @@ private:
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
     static inline BodyFunction lastDebug_ = nullptr;
+    static inline bool isReadOperation_ = false;
 };
 // 8 IOExpanders to a single enable line for SPI purposes
 // 4 of them are reserved
