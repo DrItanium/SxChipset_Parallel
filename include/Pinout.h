@@ -406,12 +406,22 @@ inline void setDemuxAddress() noexcept {
         default:
             break;
     }
+    // introduce a single cycle of latency to be on the safe side
+    asm volatile ("nop");
 }
 
 inline void setDemuxAsReady() noexcept { setDemuxAddress<2>(); }
 inline void setDemuxAsSDEN() noexcept { setDemuxAddress<0>(); }
 inline void setDemuxAsGPIOSelect() noexcept { setDemuxAddress<1>(); }
-inline void setMuxToChannelA() noexcept { DigitalPin<i960Pinout::MUX_SEL0>::assertPin(); }
-inline void setMuxToChannelB() noexcept { DigitalPin<i960Pinout::MUX_SEL0>::deassertPin(); }
+inline void setMuxToChannelA() noexcept {
+    DigitalPin<i960Pinout::MUX_SEL0>::assertPin();
+    // introduce a single cycle of latency to be on the safe side
+    asm volatile ("nop");
+}
+inline void setMuxToChannelB() noexcept {
+    DigitalPin<i960Pinout::MUX_SEL0>::deassertPin();
+    // introduce a single cycle of latency to be on the safe side
+    asm volatile ("nop");
+}
 
 #endif //ARDUINO_PINOUT_H
