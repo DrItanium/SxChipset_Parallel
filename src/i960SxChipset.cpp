@@ -111,7 +111,8 @@ L1Cache theCache;
     return outcome;
 }
 inline void waitForCycleUnlock() noexcept {
-    while (DigitalPin<i960Pinout::DO_CYCLE_>::isDeasserted());
+    while (DigitalPin<i960Pinout::DO_CYCLE_>::isDeasserted()) {
+    }
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
@@ -132,6 +133,7 @@ inline void fallbackBody() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for (;;) {
+            waitForCycleUnlock();
             // need to introduce some delay
             ProcessorInterface::setDataBits(0);
             if (informCPU()) {
@@ -142,6 +144,7 @@ inline void fallbackBody() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
+            waitForCycleUnlock();
             // put four cycles worth of delay into this to make damn sure we are ready with the i960
             __builtin_avr_nops(4);
             // need to introduce some delay
@@ -165,6 +168,7 @@ inline void handleMemoryInterface() noexcept {
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+            waitForCycleUnlock();
             auto outcome = theEntry.get(i);
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -187,6 +191,7 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+            waitForCycleUnlock();
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -216,6 +221,7 @@ inline void handleExternalDeviceRequest() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
+            waitForCycleUnlock();
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
@@ -236,6 +242,7 @@ inline void handleExternalDeviceRequest() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
+            waitForCycleUnlock();
             auto dataBits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tPage Index: 0x")) ;
@@ -262,7 +269,11 @@ inline void handleExternalDeviceRequest() noexcept {
 template<bool inDebugMode>
 inline void invocationBody() noexcept {
     // wait for the management engine to tell us that we are in a transaction
-    while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted());
+    while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted()) {
+        if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
+            signalHaltState(F("CHECKSUM FAILURE!"));
+        }
+    }
     // keep processing data requests until we
     // when we do the transition, record the information we need
     // there are only two parts to this code, either we map into ram or chipset functions
