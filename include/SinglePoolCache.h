@@ -50,12 +50,24 @@ public:
     static constexpr auto NumWordsCached = CacheEntry::NumWordsCached;
     static constexpr auto CacheEntryMask = CacheEntry::CacheEntryMask;
 public:
+    template<bool inDebugMode>
     [[nodiscard]] CacheEntry& getLine() noexcept {
         // only align if we need to reset the chip
-        return getLine(TaggedAddress(ProcessorInterface::getAddress()));
+        return getLine<inDebugMode>(TaggedAddress(ProcessorInterface::getAddress()));
     }
+    template<bool inDebugMode>
     [[nodiscard]] CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         // only align if we need to reset the chip
+        if constexpr (inDebugMode) {
+            Serial.print(F("\t\tAddress decomp: 0x"));
+            Serial.print(theAddress.getRest(), HEX);
+            Serial.print(F(", 0x"));
+            Serial.print(theAddress.getTagIndex(), HEX);
+            Serial.print(F(", 0x"));
+            Serial.print(theAddress.getLowest(), HEX);
+            Serial.print(F(" -> 0x"));
+            Serial.println(theAddress.getAddress(), HEX);
+        }
         return entries_[theAddress.getTagIndex()].getLine(theAddress);
     }
     [[nodiscard]] auto* find(const TaggedAddress& theAddress) noexcept {

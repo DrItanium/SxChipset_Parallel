@@ -177,7 +177,7 @@ inline void handleMemoryInterface() noexcept {
     }
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
-    if (auto& theEntry = theCache.getLine(); ProcessorInterface::isReadOperation()) {
+    if (auto& theEntry = theCache.getLine<inDebugMode>(); ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)

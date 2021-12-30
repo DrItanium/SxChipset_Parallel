@@ -38,7 +38,7 @@ union TaggedAddress {
     }
     [[nodiscard]] bool restEqual(TaggedAddress other) const noexcept { return getRest() == other.getRest(); }
 private:
-    Address base;
+    AddressType base;
     struct {
         LowerType lowest : NumLowestBits;
         TagType tagIndex : NumTagBits;
