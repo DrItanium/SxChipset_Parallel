@@ -341,7 +341,6 @@ struct DigitalPin {
         private:                                                                            \
         static inline auto currentDirection_ = INPUT; \
 }
-
 #define DefSPICSPin(pin) DefOutputPin(pin, LOW, HIGH)
 DefOutputPin(i960Pinout::DEMUX_EN, LOW, HIGH);
 DefOutputPin(i960Pinout::DEMUX_ID0, LOW, HIGH);
@@ -359,9 +358,6 @@ DefBidirectionalPin(i960Pinout::DATA0, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::DATA1, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::DATA2, LOW, HIGH);
 
-DefBidirectionalPin(i960Pinout::Count, LOW, HIGH);
-#else
-#warning "No specific pinouts defined!"
 #undef DefBidirectionalPin
 #undef DefSPICSPin
 #undef DefInputPin
@@ -386,5 +382,33 @@ public:
     PinAsserter() { DigitalPin<pinId>::assertPin(); }
     ~PinAsserter() { DigitalPin<pinId>::deassertPin(); }
 };
+
+template<byte value>
+inline void setDemuxAddress() noexcept {
+    switch (value & 0b11) {
+        case 0:
+            DigitalPin<i960Pinout::DEMUX_ID0>::assertPin();
+            DigitalPin<i960Pinout::DEMUX_ID1>::assertPin();
+            break;
+        case 1:
+            DigitalPin<i960Pinout::DEMUX_ID0>::deassertPin();
+            DigitalPin<i960Pinout::DEMUX_ID1>::assertPin();
+            break;
+        case 2:
+            DigitalPin<i960Pinout::DEMUX_ID0>::assertPin();
+            DigitalPin<i960Pinout::DEMUX_ID1>::deassertPin();
+            break;
+        case 3:
+            DigitalPin<i960Pinout::DEMUX_ID0>::deassertPin();
+            DigitalPin<i960Pinout::DEMUX_ID1>::deassertPin();
+            break;
+        default:
+            break;
+    }
+}
+
+inline void setDemuxAsReady() noexcept { setDemuxAddress<2>(); }
+inline void setDemuxAsSDEN() noexcept { setDemuxAddress<0>(); }
+inline void setDemuxAsGPIOSelect() noexcept { setDemuxAddress<1>(); }
 
 #endif //ARDUINO_PINOUT_H

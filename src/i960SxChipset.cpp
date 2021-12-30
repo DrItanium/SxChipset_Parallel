@@ -47,14 +47,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ProcessorSerializer.h"
 #include "DisplayInterface.h"
 #include "CoreChipsetFeatures.h"
-#include "PSRAMChip.h"
 #include "SDCardAsRam.h"
 #include "TaggedCacheAddress.h"
 #include "RTCInterface.h"
 #include "i960SxChipset.h"
 #include "type_traits.h"
-#include "23LC1024.h"
-#include "SRAMDataContainer.h"
 
 constexpr auto RTCBaseAddress = 0xFA00'0000;
 constexpr auto Serial0BaseAddress = 0xFB00'0000;
@@ -80,31 +77,19 @@ using ConfigurationSpace = CoreChipsetFeatures<TheConsoleInterface,
 // define the backing memory storage classes via template specialization
 // at this point in time, if no specialization is performed, use SDCard as ram backend
 using FallbackMemory = SDCardAsRam<TheSDInterface >;
-template<TargetMCU mcu> struct BackingMemoryStorage final {
-    using Type = FallbackMemory;
-};
-template<> struct BackingMemoryStorage<TargetMCU::ATmega1284p_Type1> final {
-    using ActualType = OnboardPSRAMBlock;
-    using Type = SRAMDataContainer<ActualType>;
-};
+template<TargetMCU mcu> struct BackingMemoryStorage final { using Type = FallbackMemory; };
 
 using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>::Type;
 constexpr auto computeCacheLineSize() noexcept { return 6; }
 //using OnboardPSRAMBlock = ::
-constexpr auto NumAddressBitsForPSRAMCache = 26;
+constexpr auto NumAddressBitsForPSRAMCache = 32;
 constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = computeCacheLineSize();
 constexpr auto CacheSize = 8192;
-template<auto a, auto b, auto c, typename d, bool e = true>
-using CacheWayStyle = conditional_t<TargetBoard::onAtmega1284p_Type2(),
-        conditional_t<UsePSRAMForType2, EightWayRandPLRUCacheSet<a,b,c,d, e>, SixteenWayLRUCacheWay<a,b,c,d, e>>,
-        EightWayRandPLRUCacheSet<a,b,c,d, e>>;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-//using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-//using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-using L1Cache = CacheInstance_t<CacheWayStyle, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
+using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,
@@ -120,9 +105,12 @@ L1Cache theCache;
 
 [[nodiscard]] bool informCPU() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
-    auto isBurstLast = DigitalPin<i960Pinout::BLAST_>::isAsserted();
-    pulse<i960Pinout::Ready>();
-    return isBurstLast;
+    setDemuxAsReady();
+    DigitalPin<i960Pinout::Ready_>::assertPin();
+    while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isAsserted() && DigitalPin<i960Pinout::BURST_NEXT_>::isDeasserted());
+    bool outcome = DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted();
+    DigitalPin<i960Pinout::Ready_>::deassertPin();
+    return outcome;
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
