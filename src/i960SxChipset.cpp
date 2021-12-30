@@ -472,8 +472,7 @@ void setup() {
     // on bootup we need to ignore the interrupt lines for now
     doInvocationBody<CompileInAddressDebuggingSupport>();
     doInvocationBody<CompileInAddressDebuggingSupport>();
-    delay(1);
-    if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == HIGH) {
+    if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
         signalHaltState(F("CHECKSUM FAILURE!"));
     } else {
         Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
