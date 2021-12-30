@@ -253,17 +253,17 @@ public:
             }
         } else {
             SplitWord16 split(value) ;
-            Serial.print(F("\tSPLIT: 0b"));
-            Serial.println(split.getWholeValue(), BIN);
 
             PORTA = split.bytes[1];
             PORTC = split.bytes[0];
-            Serial.print(F("\tPORTA: 0b"));
-            Serial.println(PORTA, BIN);
-            Serial.print(F("\tPORTC: 0b"));
-            Serial.println(PORTC, BIN);
-            Serial.print(F("\tSERIAL READ: 0b"));
-            Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), BIN);
+            Serial.print(F("\t\tSPLIT: 0x"));
+            Serial.println(split.getWholeValue(), HEX);
+            Serial.print(F("\t\tPORTA: 0x"));
+            Serial.println(PORTA, HEX);
+            Serial.print(F("\t\tPORTC: 0x"));
+            Serial.println(PORTC, HEX);
+            Serial.print(F("\t\tSERIAL READ: 0x"));
+            Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), HEX);
             // do nothing
         }
     }
@@ -271,13 +271,14 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        portMode(PORTA, INPUT);
-        portMode(PORTC, INPUT);
+        DDRA = 0;
+        DDRC = 0;
+        PORTA = 0;
+        PORTC = 0;
     }
     inline static void setupDataLinesForRead() noexcept {
-        // do nothing
-        portMode(PORTA, OUTPUT);
-        portMode(PORTC, OUTPUT);
+        DDRA = 0xFF;
+        DDRC = 0xFF;
     }
 private:
     template<bool useInterrupts = true>

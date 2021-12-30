@@ -427,8 +427,22 @@ void setup() {
     DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::configure();
     DigitalPin<i960Pinout::DO_CYCLE_>::configure();
     DigitalPin<i960Pinout::BURST_NEXT_>::configure();
-    portMode(PORTA, INPUT);
-    portMode(PORTC, INPUT);
+    DigitalPin<i960Pinout::DATA0>::configure();
+    DigitalPin<i960Pinout::DATA1>::configure();
+    DigitalPin<i960Pinout::DATA2>::configure();
+    DigitalPin<i960Pinout::DATA3>::configure();
+    DigitalPin<i960Pinout::DATA4>::configure();
+    DigitalPin<i960Pinout::DATA5>::configure();
+    DigitalPin<i960Pinout::DATA6>::configure();
+    DigitalPin<i960Pinout::DATA7>::configure();
+    DigitalPin<i960Pinout::DATA8>::configure();
+    DigitalPin<i960Pinout::DATA9>::configure();
+    DigitalPin<i960Pinout::DATA10>::configure();
+    DigitalPin<i960Pinout::DATA11>::configure();
+    DigitalPin<i960Pinout::DATA12>::configure();
+    DigitalPin<i960Pinout::DATA13>::configure();
+    DigitalPin<i960Pinout::DATA14>::configure();
+    DigitalPin<i960Pinout::DATA15>::configure();
     theCache.begin();
     // purge the cache pages
     ConfigurationSpace::begin();
@@ -441,6 +455,11 @@ void setup() {
     delay(100);
     Serial.println(F("i960Sx chipset brought up fully!"));
     ProcessorInterface::pulli960OutOfReset();
+    Wire.end();
+    DDRA = 0;
+    PORTA = 0;
+    DDRC = 0;
+    PORTC = 0;
     // at this point we have started execution of the i960
     // wait until we enter self test state
     while (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW);
