@@ -443,8 +443,8 @@ void setup() {
     // first set of 16-byte request from memory
 
     // on bootup we need to ignore the interrupt lines for now
-    doInvocationBody<CompileInAddressDebuggingSupport, false>();
-    doInvocationBody<CompileInAddressDebuggingSupport, false>();
+    doInvocationBody<CompileInAddressDebuggingSupport>();
+    doInvocationBody<CompileInAddressDebuggingSupport>();
     delay(1);
     if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == HIGH) {
         signalHaltState(F("CHECKSUM FAILURE!"));
@@ -493,7 +493,7 @@ void loop() {
     // and doesn't seem to impact performance in burst transactions
 
     for (;;) {
-        doInvocationBody<CompileInAddressDebuggingSupport, UseIOExpanderAddressLineInterrupts>();
+        doInvocationBody<CompileInAddressDebuggingSupport>();
     }
 }
 
