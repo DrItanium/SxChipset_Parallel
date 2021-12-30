@@ -43,8 +43,4 @@
     SD_EN = PORT_B4,
     GPIOSelect = PORT_B4,
     Ready_ = PORT_B4,
-    PSRAM_EN = Count,
-    CACHE_EN = Count,
-    Int0_ = Count,
-    PSRAM_EN1 = Count,
 

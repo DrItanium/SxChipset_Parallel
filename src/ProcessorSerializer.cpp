@@ -38,50 +38,28 @@ ProcessorInterface::begin() noexcept {
         // should receive it.
         // so do a begin operation on all chips (0b000)
         // set IOCON.HAEN on all chips
-        write16<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
-        write16<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
-        write16<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-            // now all devices tied to this ~CS pin have separate addresses
-            // make each of these inputs
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            // enable HAEN and also set the mirror INTA/INTB bits
-            write8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0100'1000) ;
-            write8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0100'1000) ;
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::MemoryCommitExtras, false>(0x005F);
-            // we can just set the pins up in a single write operation to the olat, since only the pins configured as outputs will be affected
-            write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::OLATA, false>(0b1000'0000);
-            // write the default value out to the latch to start with
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-        } else if constexpr (TargetBoard::onAtmega1284p_Type2()) {
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            // use 16-bit versions to be on the safe side
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000) ;
-            // for some reason, independent interrupts for the upper 16-bits is a no go... unsure why so enable mirroring and reclaim one of the pins
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0101'1000'0101'1000) ;
-            // If I ever figure out why the upper 16 lines do not want to work with independent pins then we will activate this version
-            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000) ;
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-            // make sure we clear out any interrupt flags
-        } else {
-            /// @todo implement this
-        }
+        write8<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+        write8<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+        write8<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+        write8<ProcessorInterface::IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::IOCON, false>(0b0000'1000);
+        writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
+        writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
+        writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
+        writeDirection<IOExpanderAddress::MemoryCommitExtras, false>(0b1111'1111'1111'1100);
+        write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
+        write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
+        write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
+        write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
+        write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
+        // trigger a reset on the management engine
+        write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::GPIO, false>(0b0000'0010);
+        // hold for 1 second
+        delay(1000);
+        // release by pulling reset me high and wait boot 960 low
+        write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::GPIO, false>(0b0000'0001);
+        updateTargetFunctions<true>();
+        updateTargetFunctions<false>();
+        // make sure we clear out any interrupt flags
         SPI.endTransaction();
     }
 }
