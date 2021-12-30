@@ -1,39 +1,50 @@
     #include "1284pPinout.def"
     // Limited subset design for type 1.4
     // PORT B
-    FAIL = PORT_B0,
-    CLOCK_OUT= PORT_B1,
-    Reset960 = PORT_B2,
-    SD_EN = PORT_B3,
-    GPIOSelect = PORT_B4,
+    SUCCESSFUL_BOOT_ = PORT_B0,
+    CLOCK_OUT = PORT_B1,
+    DEMUX_ID0 = PORT_B2,
+    DEMUX_ID1 = PORT_B3,
+    DEMUX_EN = PORT_B4,
     MOSI = PORT_B5,
     MISO = PORT_B6,
     SCK = PORT_B7,
     // PORT D
     RX0 = PORT_D0,
     TX0 = PORT_D1,
-    MISO1 = PORT_D2,
-    MOSI1 = PORT_D3,
-    SCK1 = PORT_D4,
-    // PD5 unused
-    Ready = PORT_D6,
-    W_R_ = PORT_D7,
-    // PORT C
-    SCL = PORT_C0,
-    SDA = PORT_C1,
-    // due to a bug in the current board these pins have to be toggled together at the same time
-    PSRAM_EN = PORT_C2, // left named this way for compatibility purposes
-    PSRAM_EN1 = PORT_C3,
-    TFT_CS = PORT_C4,
-    TFT_DC = PORT_C5,
-    // PC4-PC7 unused
-    // PORT A
-    INT_EN0 = PORT_A0,
-    INT_EN1 = PORT_A1,
-    INT_EN2 = PORT_A2,
-    INT_EN3 = PORT_A3, // a mirror of INT_EN2 because of some strangeness with the board design...
-    BE0 = PORT_A4,
-    BE1 = PORT_A5,
-    BLAST_ = PORT_A6,
-    DEN_ = PORT_A7,
-    Int0_ = Count, // Int0 disconnected right now
+    DO_CYCLE_ = PORT_D2,
+    IN_TRANSACTION_ = PORT_D3,
+    BURST_NEXT_ = PORT_D4,
+    MUX_CHAN0 = PORT_D5,
+    MUX_CHAN1 = PORT_D6,
+    MUX_SEL0 = PORT_D7,
+    // Ports C and A are devoted to data line capture
+    DATA0 = PORT_C0,
+    DATA1 = PORT_C1,
+    DATA2 = PORT_C2,
+    DATA3 = PORT_C3,
+    DATA4 = PORT_C4,
+    DATA5 = PORT_C5,
+    DATA6 = PORT_C6,
+    DATA7 = PORT_C7,
+    DATA8 = PORT_A0,
+    DATA9 = PORT_A1,
+    DATA10 = PORT_A2,
+    DATA11 = PORT_A3,
+    DATA12 = PORT_A4,
+    DATA13 = PORT_A5,
+    DATA14 = PORT_A6,
+    DATA15 = PORT_A7,
+    // MULTIPLEXED INPUTS
+    BE0 = PORT_D5,
+    BE1 = PORT_D6,
+    W_R_ = PORT_D5,
+    // DEMULTIPLEXED OUTPUTS
+    SD_EN = PORT_B4,
+    GPIOSelect = PORT_B4,
+    Ready_ = PORT_B4,
+    PSRAM_EN = Count,
+    CACHE_EN = Count,
+    Int0_ = Count,
+    PSRAM_EN1 = Count,
+

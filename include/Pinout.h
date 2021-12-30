@@ -33,17 +33,17 @@ using Address = uint32_t;
  */
 enum class LoadStoreStyle : uint8_t {
     // based off of BE0,BE1 pins
-#if 0
-    Full16 = 0b00,
-    Upper8 = 0b01,
-    Lower8 = 0b10,
-    None = 0b11,
-#else
+#ifdef CHIPSET_TYPE1
 // no need to shift
     Full16 = 0b0000'0000,
     Upper8 = 0b0001'0000,
     Lower8 = 0b0010'0000,
     None = 0b0011'0000,
+#else
+    Full16 = 0b00,
+    Upper8 = 0b01,
+    Lower8 = 0b10,
+    None = 0b11,
 #endif
 };
 /// @todo fix this pinout for different targets
@@ -242,9 +242,12 @@ struct DigitalPin {
     DigitalPin& operator=(DigitalPin&&) = delete;
     static constexpr bool isInputPin() noexcept { return false; }
     static constexpr bool isOutputPin() noexcept { return false; }
-    static constexpr bool getDirection() noexcept { return false; }
+    static constexpr bool getDirection() noexcept { return INPUT; }
     static constexpr auto getPin() noexcept { return pin; }
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }
+    static void configure() noexcept {
+        pinMode(getPin(), getDirection());
+    }
 };
 
 #define DefOutputPin(pin, asserted, deasserted) \
@@ -272,6 +275,7 @@ struct DigitalPin {
         inline static void pulse() noexcept {   \
             ::pulse<pin, switchTo>();           \
         }                                       \
+        static inline void configure() noexcept { pinMode(getPin(), getDirection()); }               \
     }
 #define DefInputPin(pin, asserted, deasserted) \
     template<> \
@@ -292,17 +296,58 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static auto read() noexcept { return digitalRead<pin>(); } \
         [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
         [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
-        static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+        static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }              \
+        static inline void configure() noexcept { pinMode(getPin(), getDirection()); }               \
     }
-#define DefSPICSPin(pin) DefOutputPin(pin, LOW, HIGH)
+#define DefBidirectionalPin(pin, asserted, deasserted) template<> struct DigitalPin<pin> {  \
+        static_assert(asserted != deasserted, "Asserted and deasserted must not be equal!"); \
+        DigitalPin() = delete; \
+        ~DigitalPin() = delete; \
+        DigitalPin(const DigitalPin&) = delete; \
+        DigitalPin(DigitalPin&&) = delete; \
+        DigitalPin& operator=(const DigitalPin&) = delete; \
+        DigitalPin& operator=(DigitalPin&&) = delete;                                       \
+        static constexpr auto isInputPin() noexcept { return true; } \
+        static constexpr auto isOutputPin() noexcept { return true; } \
+        static constexpr auto getPin() noexcept { return pin; } \
+        static auto getDirection() noexcept { return currentDirection_; } \
+        static constexpr auto getAssertionState() noexcept { return asserted; } \
+        static constexpr auto getDeassertionState() noexcept { return deasserted; } \
+        [[gnu::always_inline]] inline static auto read() noexcept { return digitalRead<pin>(); } \
+        [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
+        [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
+        static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }              \
+        static inline void configure() noexcept { pinMode(getPin(), getDirection()); }      \
+        static inline void directionOutput() noexcept {                                     \
+        if (currentDirection_ != OUTPUT) {                                                  \
+            currentDirection_ = OUTPUT;                                                     \
+            pinMode(getPin(), getDirection());                                              \
+        }                                                                                     \
+        }                                                                                     \
+        static inline void directionInput() noexcept {                                     \
+        if (currentDirection_ != INPUT) {                                                  \
+            currentDirection_ = INPUT;                                                     \
+            pinMode(getPin(), getDirection());                                              \
+        }                                                                                     \
+        }                                                                                     \
+        [[gnu::always_inline]] inline static void assertPin() noexcept { digitalWrite<pin,getAssertionState()>(); } \
+        [[gnu::always_inline]] inline static void deassertPin() noexcept { digitalWrite<pin,getDeassertionState()>(); } \
+        [[gnu::always_inline]] inline static void write(decltype(LOW) value) noexcept { digitalWrite<pin>(value); } \
+        template<decltype(LOW) switchTo = LOW>  \
+        [[gnu::always_inline]]                  \
+        inline static void pulse() noexcept {   \
+            ::pulse<pin, switchTo>();           \
+        }                                                                                   \
+        private:                                                                            \
+        static inline auto currentDirection_ = INPUT; \
+}
 
+#define DefSPICSPin(pin) DefOutputPin(pin, LOW, HIGH)
+#ifdef CHIPSET_TYPE1
 DefSPICSPin(i960Pinout::GPIOSelect);
 DefSPICSPin(i960Pinout::SD_EN);
 DefSPICSPin(i960Pinout::PSRAM_EN);
 DefSPICSPin(i960Pinout::CACHE_EN);
-#ifdef CHIPSET_TYPE2
-DefSPICSPin(i960Pinout::PSRAM_EN1);
-#endif
 
 DefOutputPin(i960Pinout::Reset960, LOW, HIGH);
 DefOutputPin(i960Pinout::Ready, LOW, HIGH);
@@ -310,6 +355,28 @@ DefInputPin(i960Pinout::FAIL, HIGH, LOW);
 DefInputPin(i960Pinout::DEN_, LOW, HIGH);
 DefInputPin(i960Pinout::BLAST_, LOW, HIGH);
 DefInputPin(i960Pinout::W_R_, LOW, HIGH);
+#elif defined(CHIPSET_TYPE2)
+DefOutputPin(i960Pinout::DEMUX_EN, LOW, HIGH);
+DefOutputPin(i960Pinout::DEMUX_ID0, LOW, HIGH);
+DefOutputPin(i960Pinout::DEMUX_ID1, LOW, HIGH);
+DefOutputPin(i960Pinout::MUX_SEL0, LOW, HIGH);
+
+DefInputPin(i960Pinout::SUCCESSFUL_BOOT_, LOW, HIGH);
+DefInputPin(i960Pinout::DO_CYCLE_, LOW, HIGH);
+DefInputPin(i960Pinout::IN_TRANSACTION_, LOW, HIGH);
+DefInputPin(i960Pinout::BURST_NEXT_, LOW, HIGH);
+DefInputPin(i960Pinout::MUX_CHAN0, LOW, HIGH);
+DefInputPin(i960Pinout::MUX_CHAN1, LOW, HIGH);
+
+DefBidirectionalPin(i960Pinout::DATA0, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA1, LOW, HIGH);
+DefBidirectionalPin(i960Pinout::DATA2, LOW, HIGH);
+
+DefBidirectionalPin(i960Pinout::Count, LOW, HIGH);
+#else
+#warning "No specific pinouts defined!"
+#endif
+#undef DefBidirectionalPin
 #undef DefSPICSPin
 #undef DefInputPin
 #undef DefOutputPin
