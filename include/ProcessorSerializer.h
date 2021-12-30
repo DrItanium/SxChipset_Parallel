@@ -242,6 +242,7 @@ public:
             return SplitWord16(0);
         }
     }
+    template<bool inDebugMode = false>
     static void setDataBits(uint16_t value) noexcept {
         if constexpr (TargetBoard::onAtmega1284p_Type1()) {
             // the latch is preserved in between data line changes
@@ -256,14 +257,16 @@ public:
 
             PORTA = split.bytes[1];
             PORTC = split.bytes[0];
-            Serial.print(F("\t\tSPLIT: 0x"));
-            Serial.println(split.getWholeValue(), HEX);
-            Serial.print(F("\t\tPORTA: 0x"));
-            Serial.println(PORTA, HEX);
-            Serial.print(F("\t\tPORTC: 0x"));
-            Serial.println(PORTC, HEX);
-            Serial.print(F("\t\tSERIAL READ: 0x"));
-            Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), HEX);
+            if constexpr (inDebugMode) {
+                Serial.print(F("\t\tSPLIT: 0x"));
+                Serial.println(split.getWholeValue(), HEX);
+                Serial.print(F("\t\tPORTA: 0x"));
+                Serial.println(PORTA, HEX);
+                Serial.print(F("\t\tPORTC: 0x"));
+                Serial.println(PORTC, HEX);
+                Serial.print(F("\t\tSERIAL READ: 0x"));
+                Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), HEX);
+            }
             // do nothing
         }
     }
