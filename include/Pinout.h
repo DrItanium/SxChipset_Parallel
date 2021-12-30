@@ -343,19 +343,6 @@ struct DigitalPin {
 }
 
 #define DefSPICSPin(pin) DefOutputPin(pin, LOW, HIGH)
-#ifdef CHIPSET_TYPE1
-DefSPICSPin(i960Pinout::GPIOSelect);
-DefSPICSPin(i960Pinout::SD_EN);
-DefSPICSPin(i960Pinout::PSRAM_EN);
-DefSPICSPin(i960Pinout::CACHE_EN);
-
-DefOutputPin(i960Pinout::Reset960, LOW, HIGH);
-DefOutputPin(i960Pinout::Ready, LOW, HIGH);
-DefInputPin(i960Pinout::FAIL, HIGH, LOW);
-DefInputPin(i960Pinout::DEN_, LOW, HIGH);
-DefInputPin(i960Pinout::BLAST_, LOW, HIGH);
-DefInputPin(i960Pinout::W_R_, LOW, HIGH);
-#elif defined(CHIPSET_TYPE2)
 DefOutputPin(i960Pinout::DEMUX_EN, LOW, HIGH);
 DefOutputPin(i960Pinout::DEMUX_ID0, LOW, HIGH);
 DefOutputPin(i960Pinout::DEMUX_ID1, LOW, HIGH);
@@ -375,7 +362,6 @@ DefBidirectionalPin(i960Pinout::DATA2, LOW, HIGH);
 DefBidirectionalPin(i960Pinout::Count, LOW, HIGH);
 #else
 #warning "No specific pinouts defined!"
-#endif
 #undef DefBidirectionalPin
 #undef DefSPICSPin
 #undef DefInputPin
