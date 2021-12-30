@@ -159,7 +159,7 @@ inline void fallbackBody() noexcept {
         for (;;) {
             waitForCycleUnlock<inDebugMode>();
             // need to introduce some delay
-            ProcessorInterface::setDataBits(0);
+            ProcessorInterface::setDataBits<inDebugMode>(0);
             if (informCPU<inDebugMode>()) {
                 break;
             }
@@ -201,7 +201,7 @@ inline void handleMemoryInterface() noexcept {
                 Serial.println(outcome, HEX);
             }
             // Only pay for what we need even if it is slower
-            ProcessorInterface::setDataBits(outcome);
+            ProcessorInterface::setDataBits<inDebugMode>(outcome);
             if (informCPU<inDebugMode>()) {
                 break;
             }
@@ -257,7 +257,7 @@ inline void handleExternalDeviceRequest() noexcept {
                 Serial.print(F("\tRead Value: 0x"));
                 Serial.println(result, HEX);
             }
-            ProcessorInterface::setDataBits(result);
+            ProcessorInterface::setDataBits<inDebugMode>(result);
             if (informCPU<inDebugMode>()) {
                 break;
             }
