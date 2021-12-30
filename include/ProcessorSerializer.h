@@ -324,9 +324,9 @@ private:
 public:
     template<bool inDebugMode, byte offsetMask>
     static void newDataCycle() noexcept {
+        setMuxToChannelA();
         full32BitUpdate<offsetMask>();
         updateTargetFunctions<inDebugMode>();
-        setMuxToChannelA();
         {
             //Serial.print(F("W_R_ = "));
             //Serial.println(DigitalPin<i960Pinout::W_R_>::read());
