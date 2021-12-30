@@ -1,4 +1,4 @@
-This project uses an ATmega1284p to act as a chipset for an i960SB-10 processor. The chipset runs in lockstep with the i960 and while slow does work wonderfully.
-The project uses the MightyCore project from MCUDude. 
+This is a modification of the standard SxChipset where ports C and A are reserved for parallel data access. Based off of the work I did with the management engine and an adafruit grand central m4 based chipset, I was able to prove that the biggest bottleneck in the chipset is actually serializing the data lines. The address lines are second but they are not used as much.
+This version of the chipset also uses the 4809 based management engine firmware first used in the Grand Central M4 based chipset.
 
-This project requires custom hardware that I have not released yet nor am I planning to do so in the near future.
+I have had to use other tricks to get everything to work and this is the just the beginning :).
