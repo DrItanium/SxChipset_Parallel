@@ -287,8 +287,11 @@ inline void handleExternalDeviceRequest() noexcept {
 
 template<bool inDebugMode>
 inline void invocationBody() noexcept {
+    static constexpr auto DisplayWaitingDialog = inDebugMode && false;
     // wait for the management engine to tell us that we are in a transaction
-    Serial.println(F("\tWAITING FOR TRANSACTION START"));
+    if constexpr (DisplayWaitingDialog) {
+        Serial.println(F("\tWAITING FOR TRANSACTION START"));
+    }
     while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted()) {
         if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
             signalHaltState(F("CHECKSUM FAILURE!"));
