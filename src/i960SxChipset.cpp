@@ -533,9 +533,9 @@ void loop() {
     // this is expensive and something I don't use. The infinite loop is for this purpose. It shaves off around 0.1usec in the worst case
     // and doesn't seem to impact performance in burst transactions
 
-    for (;;) {
+    //for (;;) {
         doInvocationBody<CompileInAddressDebuggingSupport>();
-    }
+    //}
 }
 
 [[noreturn]]
