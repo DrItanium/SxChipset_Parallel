@@ -102,7 +102,7 @@ L1Cache theCache;
 
 
 template<bool inDebugMode>
-[[nodiscard]] bool informCPU() noexcept {
+[[gnu::noinline]] [[nodiscard]] bool informCPU() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
     if constexpr (inDebugMode) {
         Serial.println(F("\tTelling the i960 that the data lines are ready!"));
@@ -162,7 +162,7 @@ inline void fallbackBody() noexcept {
             // put four cycles worth of delay into this to make damn sure we are ready with the i960
             __builtin_avr_nops(4);
             // need to introduce some delay
-            if (informCPU<inDebugMode>()) {
+            if (informCPU<false && inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<LeaveAddressAlone>();
@@ -192,7 +192,7 @@ inline void handleMemoryInterface() noexcept {
             }
             // Only pay for what we need even if it is slower
             ProcessorInterface::setDataBits<false && inDebugMode>(outcome);
-            if (informCPU<inDebugMode>()) {
+            if (informCPU<false && inDebugMode>()) {
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -214,7 +214,7 @@ inline void handleMemoryInterface() noexcept {
                 Serial.println(bits.getWholeValue(), HEX);
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
-            if (informCPU<inDebugMode>()) {
+            if (informCPU<false && inDebugMode>()) {
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
@@ -248,7 +248,7 @@ inline void handleExternalDeviceRequest() noexcept {
                 Serial.println(result, HEX);
             }
             ProcessorInterface::setDataBits<false && inDebugMode>(result);
-            if (informCPU<inDebugMode>()) {
+            if (informCPU<false && inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -270,7 +270,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getPageOffset(),
                      ProcessorInterface::getStyle(),
                      dataBits);
-            if (informCPU<inDebugMode>()) {
+            if (informCPU<false && inDebugMode>()) {
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
