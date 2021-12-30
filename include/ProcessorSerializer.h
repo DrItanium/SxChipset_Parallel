@@ -270,7 +270,10 @@ public:
             // do nothing
         }
     }
-    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>(static_cast<byte>(~PIND) & 0b0110'0000); }
+    [[nodiscard]] static auto getStyle() noexcept {
+        setMuxToChannelB();
+        return static_cast<LoadStoreStyle>(static_cast<byte>(~PIND) & 0b0110'0000);
+    }
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
