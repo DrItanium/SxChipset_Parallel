@@ -87,7 +87,8 @@ constexpr auto CacheSize = 8192;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
+//using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
+using L1Cache = CacheInstance_t<DirectMappedCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,
@@ -173,7 +174,7 @@ inline void fallbackBody() noexcept {
 template<bool inDebugMode>
 inline void handleMemoryInterface() noexcept {
     static constexpr auto DisplayAddressDebug = inDebugMode;
-    static constexpr auto DisplayOffsetData = inDebugMode && false;
+    static constexpr auto DisplayOffsetData = inDebugMode;
     static constexpr auto DisplayCycleUnlockData = inDebugMode && false;
     static constexpr auto DisplayInformCPUDebug = inDebugMode && false;
     static constexpr auto DisplaySetDataBitsDebug = inDebugMode && false;
