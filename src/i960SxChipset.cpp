@@ -261,7 +261,7 @@ inline void handleExternalDeviceRequest() noexcept {
     }
 }
 
-template<bool inDebugMode, bool useInterrupts>
+template<bool inDebugMode>
 inline void invocationBody() noexcept {
     // wait for the management engine to tell us that we are in a transaction
     while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted());
@@ -270,18 +270,18 @@ inline void invocationBody() noexcept {
     // there are only two parts to this code, either we map into ram or chipset functions
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
-    ProcessorInterface::newDataCycle<inDebugMode, decltype(theCache)::CacheEntryMask, useInterrupts>();
+    ProcessorInterface::newDataCycle<inDebugMode, decltype(theCache)::CacheEntryMask>();
 }
-template<bool allowAddressDebuggingCodePath, bool useInterrupts>
+template<bool allowAddressDebuggingCodePath>
 void doInvocationBody() noexcept {
     if constexpr (allowAddressDebuggingCodePath) {
         if (TheConsoleInterface::addressDebuggingEnabled())  {
-            invocationBody<true, useInterrupts>();
+            invocationBody<true>();
         } else {
-            invocationBody<false, useInterrupts>();
+            invocationBody<false>();
         }
     } else {
-        invocationBody<false, useInterrupts>();
+        invocationBody<false>();
     }
 }
 void installBootImage() noexcept {

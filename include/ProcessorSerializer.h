@@ -262,28 +262,13 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-            if (!dataLinesDirection_) {
-                dataLinesDirection_ = ~dataLinesDirection_;
-                writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
-            }
-        } else {
-            portMode(PORTA, INPUT);
-            portMode(PORTC, INPUT);
-            // do nothing
-        }
+        portMode(PORTA, INPUT);
+        portMode(PORTC, INPUT);
     }
     inline static void setupDataLinesForRead() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-            if (dataLinesDirection_) {
-                dataLinesDirection_ = ~dataLinesDirection_;
-                writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
-            }
-        } else {
-            // do nothing
-            portMode(PORTA, OUTPUT);
-            portMode(PORTC, OUTPUT);
-        }
+        // do nothing
+        portMode(PORTA, OUTPUT);
+        portMode(PORTC, OUTPUT);
     }
 private:
     template<bool useInterrupts = true>
@@ -520,72 +505,10 @@ private:
         }
     }
 public:
-    template<bool inDebugMode, byte offsetMask, bool useInterrupts = true>
+    template<bool inDebugMode, byte offsetMask>
     static void newDataCycle() noexcept {
-        switch (getUpdateKind<useInterrupts>()) {
-            case 0b0001:
-                updateLower8();
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0010:
-                updateLowest8<offsetMask>();
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0011:
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0100:
-                lower16Update<offsetMask>();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0101:
-                updateLower8();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0110:
-                updateLowest8<offsetMask>();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b0111:
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
-                break;
-            case 0b1000:
-                lower16Update<offsetMask>();
-                updateHigher8();
-                break;
-            case 0b1001:
-                updateHigher8();
-                updateLower8();
-                break;
-            case 0b1010:
-                updateHigher8();
-                updateLowest8<offsetMask>();
-                break;
-            case 0b1011:
-                updateHigher8();
-                break;
-            case 0b1100:
-                lower16Update<offsetMask>();
-                break;
-            case 0b1101:
-                updateLower8();
-                break;
-            case 0b1110:
-                updateLowest8<offsetMask>();
-                break;
-            case 0b1111: break;
-            default:
-                full32BitUpdate<offsetMask>();
-                updateTargetFunctions<inDebugMode>();
-                break;
-        }
+        full32BitUpdate<offsetMask>();
+        updateTargetFunctions<inDebugMode>();
         setMuxToChannelA();
         isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isAsserted();
         setMuxToChannelB();
