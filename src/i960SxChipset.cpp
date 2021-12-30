@@ -101,20 +101,41 @@ L1Cache theCache;
 
 
 
+template<bool inDebugMode>
 [[nodiscard]] bool informCPU() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
+    if constexpr (inDebugMode) {
+        Serial.println(F("\tTelling the i960 that the data lines are ready!"));
+    }
     setDemuxAsReady();
     DigitalPin<i960Pinout::Ready_>::assertPin();
+    if constexpr (inDebugMode) {
+        Serial.println(F("\tWAITING FOR IN_TRANSACTION TO GO HIGH OR BURST_NEXT TO GO LOW"));
+    }
     while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isAsserted() && DigitalPin<i960Pinout::BURST_NEXT_>::isDeasserted());
     bool outcome = DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted();
+    if constexpr (inDebugMode) {
+        if (outcome) {
+            Serial.println(F("\t\tTRANSACTION COMPLETE"));
+        } else {
+            Serial.println(F("\t\tBURST NEXT"));
+        }
+    }
     DigitalPin<i960Pinout::Ready_>::deassertPin();
     return outcome;
 }
+template<bool inDebugMode>
 inline void waitForCycleUnlock() noexcept {
+    if constexpr (inDebugMode) {
+        Serial.println(F("\tWAITING FOR CYCLE UNLOCK"));
+    }
     while (DigitalPin<i960Pinout::DO_CYCLE_>::isDeasserted()) {
         if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
             signalHaltState(F("CHECKSUM FAILURE!"));
         }
+    }
+    if constexpr (inDebugMode) {
+        Serial.println(F("\tCYCLE UNLOCK COMPLETE!"));
     }
 }
 constexpr auto IncrementAddress = true;
@@ -136,10 +157,10 @@ inline void fallbackBody() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for (;;) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             // need to introduce some delay
             ProcessorInterface::setDataBits(0);
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<LeaveAddressAlone>();
@@ -147,11 +168,11 @@ inline void fallbackBody() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             // put four cycles worth of delay into this to make damn sure we are ready with the i960
             __builtin_avr_nops(4);
             // need to introduce some delay
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<LeaveAddressAlone>();
@@ -171,7 +192,7 @@ inline void handleMemoryInterface() noexcept {
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             auto outcome = theEntry.get(i);
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -181,7 +202,7 @@ inline void handleMemoryInterface() noexcept {
             }
             // Only pay for what we need even if it is slower
             ProcessorInterface::setDataBits(outcome);
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -194,7 +215,7 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -203,7 +224,7 @@ inline void handleMemoryInterface() noexcept {
                 Serial.println(bits.getWholeValue(), HEX);
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
@@ -224,7 +245,7 @@ inline void handleExternalDeviceRequest() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
@@ -237,7 +258,7 @@ inline void handleExternalDeviceRequest() noexcept {
                 Serial.println(result, HEX);
             }
             ProcessorInterface::setDataBits(result);
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -245,7 +266,7 @@ inline void handleExternalDeviceRequest() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
-            waitForCycleUnlock();
+            waitForCycleUnlock<inDebugMode>();
             auto dataBits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tPage Index: 0x")) ;
@@ -259,7 +280,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getPageOffset(),
                      ProcessorInterface::getStyle(),
                      dataBits);
-            if (informCPU()) {
+            if (informCPU<inDebugMode>()) {
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
@@ -272,6 +293,7 @@ inline void handleExternalDeviceRequest() noexcept {
 template<bool inDebugMode>
 inline void invocationBody() noexcept {
     // wait for the management engine to tell us that we are in a transaction
+    Serial.println(F("\tWAITING FOR TRANSACTION START"));
     while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted()) {
         if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW) {
             signalHaltState(F("CHECKSUM FAILURE!"));
