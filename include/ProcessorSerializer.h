@@ -227,13 +227,12 @@ public:
         SplitWord16 ret;
         ret.bytes[0] = PINC;
         ret.bytes[1] = PINA;
-        // stub out
-        return SplitWord16(0);
+        return ret;
     }
     static void setDataBits(uint16_t value) noexcept {
-            SplitWord16 split(value) ;
-            PORTA = split.bytes[1];
-            PORTC = split.bytes[0];
+        SplitWord16 split(value) ;
+        PORTA = split.bytes[1];
+        PORTC = split.bytes[0];
     }
     [[nodiscard]] static auto getStyle() noexcept {
         setMuxToChannelB();
@@ -242,14 +241,21 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        DDRA = 0;
-        DDRC = 0;
+        // disable pullups and then change the direction
         PORTA = 0;
+        DDRA = 0;
+        asm volatile ("nop");
         PORTC = 0;
+        DDRC = 0;
+        asm volatile ("nop");
+        delay(1);
     }
     inline static void setupDataLinesForRead() noexcept {
         DDRA = 0xFF;
+        asm volatile ("nop");
         DDRC = 0xFF;
+        asm volatile ("nop");
+        delay(1);
     }
 private:
     template<byte offsetMask>
