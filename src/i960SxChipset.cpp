@@ -418,6 +418,8 @@ void setup() {
     DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::configure();
     DigitalPin<i960Pinout::DO_CYCLE_>::configure();
     DigitalPin<i960Pinout::BURST_NEXT_>::configure();
+    portMode(PORTA, INPUT);
+    portMode(PORTC, INPUT);
     theCache.begin();
     // purge the cache pages
     ConfigurationSpace::begin();
