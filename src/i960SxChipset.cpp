@@ -263,9 +263,8 @@ inline void handleExternalDeviceRequest() noexcept {
 
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
-    // wait until AS goes from low to high
-    // then wait until the DEN state is asserted
-    while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
+    // wait for the management engine to tell us that we are in a transaction
+    while (DigitalPin<i960Pinout::IN_TRANSACTION_>::isDeasserted());
     // keep processing data requests until we
     // when we do the transition, record the information we need
     // there are only two parts to this code, either we map into ram or chipset functions
@@ -388,60 +387,10 @@ void setupDispatchTable() noexcept {
         lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
     }
 }
-void setupChipsetType1() noexcept {
-#ifdef CHIPSET_TYPE1
-    Serial.println(F("Bringing up type1 specific aspects!"));
-    setupPins(OUTPUT,
-              i960Pinout::SPI_OFFSET0,
-              i960Pinout::SPI_OFFSET1,
-              i960Pinout::SPI_OFFSET2,
-              i960Pinout::Int0_);
-    digitalWrite<i960Pinout::SPI_OFFSET0, LOW>();
-    digitalWrite<i960Pinout::SPI_OFFSET1, LOW>();
-    digitalWrite<i960Pinout::SPI_OFFSET2, LOW>();
-    digitalWrite<i960Pinout::Int0_, HIGH>();
-    setupPins(INPUT,
-              i960Pinout::BA1,
-              i960Pinout::BA2,
-              i960Pinout::BA3);
-#endif
-}
-void setupSecondSPIBus() noexcept {
-#ifdef CHIPSET_TYPE2
-    UBRR1 = 0x0000;
-    pinMode(i960Pinout::SCK1, OUTPUT); // setup XCK1 which is actually SCK1
-    UCSR1C = _BV(UMSEL11) | _BV(UMSEL10); // set usart spi mode of operation and SPI data mode 1,1
-    UCSR1B = _BV(TXEN1) | _BV(RXEN1); // enable transmitter and reciever
-    // set the baud rate. IMPORTANT: The Baud Rate must be set after the Transmitter is enabled
-    UBRR1 = 0x0000; // where maximum speed of FCPU/2 = 0x0000
-    // make sure we setup the PSRAM enable pins
-#endif
-}
-void setupChipsetType2() noexcept {
-#ifdef CHIPSET_TYPE2
-    Serial.println(F("Bringing up type2 specific aspects!"));
-    setupSecondSPIBus();
-    pinMode(i960Pinout::INT_EN2, INPUT);
-    pinMode(i960Pinout::INT_EN3, INPUT);
-    pinMode(i960Pinout::PSRAM_EN1, OUTPUT);
-    digitalWrite<i960Pinout::PSRAM_EN1, HIGH>();
-#endif
-}
 
-void setupChipsetVersionSpecificPins() noexcept {
-    if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-        setupChipsetType1();
-    } else if constexpr (TargetBoard::onAtmega1284p_Type2()) {
-        setupChipsetType2();
-    } else {
-        // do nothing
-    }
-}
 // the setup routine runs once when you press reset:
 void setup() {
     // always do this first to make sure that we put the i960 into reset regardless of target
-    pinMode(i960Pinout::Reset960, OUTPUT) ;
-    digitalWrite<i960Pinout::Reset960, LOW>();
     Serial.begin(115200);
     while (!Serial) {
         delay(10);
@@ -453,54 +402,38 @@ void setup() {
     // duration of the setup function
     // get SPI setup ahead of time
     SPI.begin();
-    setupChipsetVersionSpecificPins();
-    setupPins(OUTPUT,
-              i960Pinout::PSRAM_EN,
-              i960Pinout::SD_EN,
-              i960Pinout::Ready,
-              i960Pinout::GPIOSelect);
+    DigitalPin<i960Pinout::DEMUX_EN>::configure();
+    DigitalPin<i960Pinout::DEMUX_ID1>::configure();
+    DigitalPin<i960Pinout::DEMUX_ID0>::configure();
+    DigitalPin<i960Pinout::DEMUX_EN>::deassertPin();
+    DigitalPin<i960Pinout::DEMUX_ID0>::assertPin();
+    DigitalPin<i960Pinout::DEMUX_ID1>::assertPin();
     // all of these pins need to be pulled high
-    digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
-    digitalWrite<i960Pinout::SD_EN, HIGH>();
-    digitalWrite<i960Pinout::Ready, HIGH>();
-    digitalWrite<i960Pinout::GPIOSelect, HIGH>();
     // setup the pins that could be attached to an io expander separately
-    setupPins(INPUT,
-              i960Pinout::BE0,
-              i960Pinout::BE1,
-              i960Pinout::BLAST_,
-              i960Pinout::W_R_,
-              i960Pinout::DEN_,
-              i960Pinout::FAIL,
-              i960Pinout::INT_EN0,
-              i960Pinout::INT_EN1
-    );
-    //pinMode(i960Pinout::MISO, INPUT_PULLUP);
+    DigitalPin<i960Pinout::MUX_SEL0>::configure();
+    DigitalPin<i960Pinout::MUX_SEL0>::assertPin();
+    DigitalPin<i960Pinout::MUX_CHAN0>::configure();
+    DigitalPin<i960Pinout::MUX_CHAN1>::configure();
+    DigitalPin<i960Pinout::IN_TRANSACTION_>::configure();
+    DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::configure();
+    DigitalPin<i960Pinout::DO_CYCLE_>::configure();
+    DigitalPin<i960Pinout::BURST_NEXT_>::configure();
     theCache.begin();
     // purge the cache pages
     ConfigurationSpace::begin();
     Serial.println(F("i960Sx chipset bringup"));
     ProcessorInterface::begin();
+    // now the i960 is in reset
     BackingMemoryStorage_t::begin();
     setupDispatchTable();
     installBootImage();
     delay(100);
     Serial.println(F("i960Sx chipset brought up fully!"));
-    digitalWrite<i960Pinout::Reset960, HIGH>();
+    ProcessorInterface::pulli960OutOfReset();
     // at this point we have started execution of the i960
     // wait until we enter self test state
-    while (DigitalPin<i960Pinout::FAIL>::isDeasserted()) {
-        if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-            break;
-        }
-    }
+    while (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == LOW);
 
-    // now wait until we leave self test state
-    while (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
-        if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-            break;
-        }
-    }
     // at this point we are in idle so we are safe to loaf around a bit
     // at this point, the i960 will request 32-bytes to perform a boot check sum on.
     // If the checksum is successful then execution will continue as normal
@@ -509,10 +442,12 @@ void setup() {
     // on bootup we need to ignore the interrupt lines for now
     doInvocationBody<CompileInAddressDebuggingSupport, false>();
     doInvocationBody<CompileInAddressDebuggingSupport, false>();
-    if (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
+    delay(1);
+    if (DigitalPin<i960Pinout::SUCCESSFUL_BOOT_>::read() == HIGH) {
         signalHaltState(F("CHECKSUM FAILURE!"));
+    } else {
+        Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
     }
-    Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
 }
 // ----------------------------------------------------------------
 // state machine

@@ -224,6 +224,7 @@ public:
     ProcessorInterface& operator=(const ProcessorInterface&) = delete;
     ProcessorInterface& operator=(ProcessorInterface&&) = delete;
 public:
+    static void pulli960OutOfReset() noexcept { write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::GPIO>(0b0000'0011); }
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
