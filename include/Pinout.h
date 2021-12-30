@@ -410,5 +410,7 @@ inline void setDemuxAddress() noexcept {
 inline void setDemuxAsReady() noexcept { setDemuxAddress<2>(); }
 inline void setDemuxAsSDEN() noexcept { setDemuxAddress<0>(); }
 inline void setDemuxAsGPIOSelect() noexcept { setDemuxAddress<1>(); }
+inline void setMuxToChannelA() noexcept { DigitalPin<i960Pinout::MUX_SEL0>::assertPin(); }
+inline void setMuxToChannelB() noexcept { DigitalPin<i960Pinout::MUX_SEL0>::deassertPin(); }
 
 #endif //ARDUINO_PINOUT_H

@@ -112,6 +112,9 @@ L1Cache theCache;
     DigitalPin<i960Pinout::Ready_>::deassertPin();
     return outcome;
 }
+inline void waitForCycleUnlock() noexcept {
+    while (DigitalPin<i960Pinout::DO_CYCLE_>::isDeasserted());
+}
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
 // while the i960 does not allow going beyond 8 words, we can use the number of words cached in all cases to be safe
