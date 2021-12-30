@@ -59,7 +59,7 @@ public:
     [[nodiscard]] CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         // only align if we need to reset the chip
         if constexpr (inDebugMode) {
-            Serial.print(F("\t\tAddress decomp: 0x"));
+            Serial.print(F("\tAddress decomp: 0x"));
             Serial.print(theAddress.getRest(), HEX);
             Serial.print(F(", 0x"));
             Serial.print(theAddress.getTagIndex(), HEX);

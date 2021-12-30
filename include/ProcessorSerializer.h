@@ -209,14 +209,6 @@ class ProcessorInterface {
         }
     }
     template<IOExpanderAddress addr, bool standalone = true>
-    static inline SplitWord16 readGPIO16() noexcept {
-        return read16<addr, MCP23x17Registers::GPIO, standalone>();
-    }
-    template<IOExpanderAddress addr, bool standalone = true>
-    static inline void writeGPIO16(uint16_t value) noexcept {
-        write16<addr, MCP23x17Registers::GPIO, standalone>(value);
-    }
-    template<IOExpanderAddress addr, bool standalone = true>
     static inline void writeDirection(uint16_t value) noexcept {
         write16<addr, MCP23x17Registers::IODIR, standalone>(value);
     }
@@ -232,43 +224,16 @@ public:
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-            return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
-        } else {
-            SplitWord16 ret;
-            ret.bytes[0] = PINC;
-            ret.bytes[1] = PINA;
-            // stub out
-            return SplitWord16(0);
-        }
+        SplitWord16 ret;
+        ret.bytes[0] = PINC;
+        ret.bytes[1] = PINA;
+        // stub out
+        return SplitWord16(0);
     }
-    template<bool inDebugMode = false>
     static void setDataBits(uint16_t value) noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-            // the latch is preserved in between data line changes
-            // okay we are still pointing as output values
-            // check the latch and see if the output value is the same as what is latched
-            if (latchedDataOutput.getWholeValue() != value) {
-                latchedDataOutput.wholeValue_ = value;
-                writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
-            }
-        } else {
             SplitWord16 split(value) ;
-
             PORTA = split.bytes[1];
             PORTC = split.bytes[0];
-            if constexpr (inDebugMode) {
-                Serial.print(F("\t\tSPLIT: 0x"));
-                Serial.println(split.getWholeValue(), HEX);
-                Serial.print(F("\t\tPORTA: 0x"));
-                Serial.println(PORTA, HEX);
-                Serial.print(F("\t\tPORTC: 0x"));
-                Serial.println(PORTC, HEX);
-                Serial.print(F("\t\tSERIAL READ: 0x"));
-                Serial.println(readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>().getWholeValue(), HEX);
-            }
-            // do nothing
-        }
     }
     [[nodiscard]] static auto getStyle() noexcept {
         setMuxToChannelB();
@@ -287,28 +252,6 @@ public:
         DDRC = 0xFF;
     }
 private:
-    template<bool useInterrupts = true>
-    static byte getUpdateKind() noexcept {
-        if constexpr (!useInterrupts) {
-            return 0;
-        } else {
-            if constexpr (TargetBoard::onAtmega1284p_Type1()) {
-                switch (PIND & 0b1001'0000) {
-                    case 0b0000'0000: return 0b0000;
-                    case 0b0001'0000: return 0b0011;
-                    case 0b1000'0000: return 0b1100;
-                    case 0b1001'0000: return 0b1111;
-                    default: return 0b0000;
-                }
-            } else if constexpr (TargetBoard::onAtmega1284p_Type2()) {
-                // even though three of the four pins are actually in use, I want to eventually diagnose the problem itself
-                // so this code is ready for that day
-                return PINA & 0b0000'1111;
-            } else {
-                return 0;
-            }
-        }
-    }
     template<byte offsetMask>
     inline static void full32BitUpdate() noexcept {
         constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
@@ -410,7 +353,6 @@ public:
 private:
     static inline SplitWord32 address_{0};
     static inline SplitWord16 latchedDataOutput {0};
-    static inline byte dataLinesDirection_ = 0xFF;
     static inline byte cacheOffsetEntry_ = 0;
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
