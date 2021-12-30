@@ -328,11 +328,7 @@ public:
         full32BitUpdate<offsetMask>();
         updateTargetFunctions<inDebugMode>();
         {
-            //Serial.print(F("W_R_ = "));
-            //Serial.println(DigitalPin<i960Pinout::W_R_>::read());
             isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isDeasserted();
-            Serial.print(F("isReadOperation_ = "));
-            Serial.println(isReadOperation_);
         }
         setMuxToChannelB();
         if constexpr (inDebugMode) {
