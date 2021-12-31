@@ -78,16 +78,15 @@ using FallbackMemory = SDCardAsRam<TheSDInterface >;
 template<TargetMCU mcu> struct BackingMemoryStorage final { using Type = FallbackMemory; };
 
 using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>::Type;
-constexpr auto computeCacheLineSize() noexcept { return 6; }
-//using OnboardPSRAMBlock = ::
 constexpr auto NumAddressBitsForPSRAMCache = 32;
 constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
-constexpr auto CacheLineSize = computeCacheLineSize();
+constexpr auto CacheLineSize = 6;
 constexpr auto CacheSize = 8192;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
+//using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
+using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, false>;
 //using L1Cache = CacheInstance_t<DirectMappedCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 L1Cache theCache;
 

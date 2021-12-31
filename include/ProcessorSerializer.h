@@ -355,7 +355,6 @@ public:
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
 private:
     static inline SplitWord32 address_{0};
-    static inline byte cacheOffsetEntry_ = 0;
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
     static inline BodyFunction lastDebug_ = nullptr;
