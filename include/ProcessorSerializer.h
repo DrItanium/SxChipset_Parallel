@@ -248,14 +248,12 @@ public:
         PORTC = 0;
         DDRC = 0;
         asm volatile ("nop");
-        delay(1);
     }
     inline static void setupDataLinesForRead() noexcept {
         DDRA = 0xFF;
         asm volatile ("nop");
         DDRC = 0xFF;
         asm volatile ("nop");
-        delay(1);
     }
 private:
     template<byte offsetMask>

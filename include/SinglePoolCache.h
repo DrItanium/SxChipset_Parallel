@@ -50,23 +50,25 @@ public:
     static constexpr auto NumWordsCached = CacheEntry::NumWordsCached;
     static constexpr auto CacheEntryMask = CacheEntry::CacheEntryMask;
 public:
-    template<bool inDebugMode>
+    static constexpr auto EnableAddressDecompositionDebuggingAutomatically = false;
+    template<bool inDebugMode, bool enableAddressDecomposition = EnableAddressDecompositionDebuggingAutomatically>
     [[nodiscard]] CacheEntry& getLine() noexcept {
         // only align if we need to reset the chip
-        return getLine<inDebugMode>(TaggedAddress(ProcessorInterface::getAddress()));
+        return getLine<inDebugMode, enableAddressDecomposition>(TaggedAddress(ProcessorInterface::getAddress()));
     }
-    template<bool inDebugMode>
+    template<bool inDebugMode, bool enableAddressDecomposition = EnableAddressDecompositionDebuggingAutomatically>
     [[nodiscard]] CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
+        static constexpr auto EnableAddressDecomposition = enableAddressDecomposition && inDebugMode;
         // only align if we need to reset the chip
-        if constexpr (inDebugMode) {
-            Serial.print(F("\tAddress decomp: 0x"));
-            Serial.print(theAddress.getRest(), HEX);
-            Serial.print(F(", 0x"));
-            Serial.print(theAddress.getTagIndex(), HEX);
-            Serial.print(F(", 0x"));
-            Serial.print(theAddress.getLowest(), HEX);
-            Serial.print(F(" -> 0x"));
-            Serial.println(theAddress.getAddress(), HEX);
+        if constexpr (EnableAddressDecomposition) {
+            Serial.print(F("\tAddress decomp: 0b"));
+            Serial.print(theAddress.getRest(), BIN);
+            Serial.print(F(", 0b"));
+            Serial.print(theAddress.getTagIndex(), BIN);
+            Serial.print(F(", 0b"));
+            Serial.print(theAddress.getLowest(), BIN);
+            Serial.print(F(" -> 0b"));
+            Serial.println(theAddress.getAddress(), BIN);
         }
         return entries_[theAddress.getTagIndex()].getLine(theAddress);
     }
