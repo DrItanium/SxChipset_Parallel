@@ -239,7 +239,8 @@ public:
         return static_cast<LoadStoreStyle>(static_cast<byte>(~PIND) & 0b0110'0000);
     }
     [[nodiscard]] static bool isReadOperation() noexcept { return isReadOperation_; }
-    [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
+    template<byte offsetMask>
+    [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
     inline static void setupDataLinesForWrite() noexcept {
         // disable pullups and then change the direction
         PORTA = 0;
@@ -256,7 +257,6 @@ public:
         asm volatile ("nop");
     }
 private:
-    template<byte offsetMask>
     inline static void full32BitUpdate() noexcept {
         constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
@@ -284,9 +284,6 @@ private:
         SPDR = 0;
         asm volatile("nop");
         {
-            // inside of here we have access to 12 cycles to play with, so let's actually do some operations while we wait
-            // put scope ticks to force the matter
-            cacheOffsetEntry_ = (lowest >> 1) & offsetMask; // we want to make this quick to increment
             address_.bytes[0] = lowest;
         }
         while (!(SPSR & _BV(SPIF))); // wait
@@ -326,10 +323,10 @@ private:
         }
     }
 public:
-    template<bool inDebugMode, byte offsetMask>
+    template<bool inDebugMode>
     static void newDataCycle() noexcept {
         setMuxToChannelA();
-        full32BitUpdate<offsetMask>();
+        full32BitUpdate();
         updateTargetFunctions<inDebugMode>();
         {
             isReadOperation_ = DigitalPin<i960Pinout::W_R_>::isDeasserted();
@@ -358,7 +355,6 @@ public:
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
 private:
     static inline SplitWord32 address_{0};
-    static inline SplitWord16 latchedDataOutput {0};
     static inline byte cacheOffsetEntry_ = 0;
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;

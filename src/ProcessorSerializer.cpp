@@ -50,10 +50,9 @@ ProcessorInterface::begin() noexcept {
         write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
         write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
         write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-        write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
         // trigger a reset on the management engine
         write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::GPIO, false>(0b0000'0010);
-        // hold for 1 second
+        // hold for half a second
         delay(1000);
         // release by pulling reset me high and wait boot 960 low
         write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::GPIO, false>(0b0000'0001);
